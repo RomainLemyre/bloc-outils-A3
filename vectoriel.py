@@ -8,7 +8,7 @@ def vectoriel(u, v):
     '''
     params = [u, v]
     for i, p in enumerate(params):
-        check.vecteur_3(p, "bloc outils", "vectoriel")
+        check.vecteur_n(3, p, "bloc outils/vectoriel")
 
     w = np.cross(u, v)
     return w

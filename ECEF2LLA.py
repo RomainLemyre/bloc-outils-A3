@@ -1,72 +1,86 @@
 import numpy as np
 import math
-import check
 
+import check
 from norme import norme
 
-A = 6378137  # 1/2 grand axe equatorial de l'ellipsoïde
-B = 6356752.3142  # 1/2 grand axe polaire de l'ellipsoïde
-E = 0.08181919092891  # Excentricité de l'ellipsoïde
 
+class ECEF2LLA():
+    def __init__(self, a=6378137, b=6356752.3142, e=0.08181919092891):
+        '''
+        a : 1/2 grand axe equatorial de l'ellipsoïde
+        b : 1/2 grand axe polaire de l'ellipsoïde
+        e : Excentricité de l'ellipsoïde
+        '''
+        self.a = a
+        self.b = b
+        self.e = e
 
-def ECEF2LLA(ecef):
-    '''
-    Transforme les coordonnées dans le repère ECEF (Earth-Centered 
-    Earth Fixed)  [m,m,m] en coordonnées géographiques LLA 
-    [rad,rad,m] par rapport à l'ellipsoïde de référence)
-    '''
-    check.vecteur_3(ecef, "bloc outils", "ECEF2LLA")
+        self.input = []  # ecef
+        self.output = []  # lla
 
-    r = calcul_r(ecef)
+    def __str__(self):
+        print("=== bloc ECEF2LLA ===")
+        print("Input :\n{}\nOutput :\n{}".format(self.input, self.output))
+        return "=====================\n"
 
-    phi = calcul_latitude(ecef, r)
-    lmbda = calcul_longitude(ecef)
-    h = calcul_h(phi, r, ecef)
+    def __calcul_r(self):
+        return norme(self.input[:2])
 
-    return np.array([phi, lmbda, h])
+    def __calcul_longitude(self):
+        return math.atan2(self.input[1], self.input[0])
 
+    def __calcul_latitude(self, r):
+        mu = self.__calcul_mu(r)
+        num_phi = self.__calcul_numPhi(mu)
+        den_phi = self.__calcul_denPhi(mu, r)
+        return math.atan2(num_phi, den_phi)
 
-def calcul_r(xyz_ecef):
-    return norme(xyz_ecef[:2])
+    def __calcul_mu(self, r):
+        return math.atan2(self.input[2], r * (1 - self.__f()))
 
+    def __f(self):
+        return 1 - np.sqrt(1 - np.absolute(self.e)**2)
 
-def calcul_longitude(xyz_ecef):
-    return math.atan2(xyz_ecef[1], xyz_ecef[0])
+    def __calcul_numPhi(self, mu):
+        return np.sin(mu)**3 * self.b * np.absolute(self.e)**2 + self.input[2]
 
+    def __calcul_denPhi(self, mu, r):
+        return r - np.cos(mu)**3 * self.a * np.absolute(self.e)**2
 
-def calcul_latitude(xyz_ecef, r):
-    mu = calcul_mu(xyz_ecef, r)
-    num_phi = calcul_numPhi(mu, xyz_ecef)
-    den_phi = calcul_denPhi(mu, r)
-    return math.atan2(num_phi, den_phi)
+    def __calcul_h(self, phi, r):
+        a = r * np.cos(phi)
+        b = self.input[2] * np.sin(phi)
+        c = np.sqrt(1 - (np.absolute(np.sin(phi))**2 * np.absolute(self.e)**2)) * self.a
+        return a + b - c
 
+    def execute(self, ecef):
+        '''
+        Transforme les coordonnées dans le repère ECEF (Earth-Centered
+        Earth Fixed)  [m,m,m] en coordonnées géographiques LLA
+        [rad,rad,m] par rapport à l'ellipsoïde de référence)
+        '''
+        self.input = ecef
 
-def calcul_mu(xyz_ecef, r):
-    return math.atan2(xyz_ecef[2], r * (1 - f()))
+        check.vecteur_n(3, self.input, "bloc outils/ECEF2LLA")
 
+        r = self.__calcul_r()
+        phi = self.__calcul_latitude(r)
+        lmbda = self.__calcul_longitude()
+        h = self.__calcul_h(phi, r)
 
-def f():
-    return 1 - np.sqrt(1 - np.absolute(E)**2)
-
-
-def calcul_numPhi(mu, xyz_ecef):
-    return np.sin(mu)**3 * B * np.absolute(E)**2 + xyz_ecef[2]
-
-
-def calcul_denPhi(mu, r):
-    return r - np.cos(mu)**3 * A * np.absolute(E)**2
-
-
-def calcul_h(phi, r, xyz_ecef):
-    a = r * np.cos(phi)
-    b = xyz_ecef[2] * np.sin(phi)
-    c = np.sqrt(1 - (np.absolute(np.sin(phi))**2 * np.absolute(E)**2)) * A
-    return a + b - c
+        self.output = np.array([phi, lmbda, h])
 
 
 # DEBUG
 if __name__ == '__main__':
     # print(help(ECEF2LLA))
-    u = np.array([10, "a", 30])
-    x = ECEF2LLA(u)
-    print(x)
+
+    ecef = np.array([100, -200, 300])
+
+    ecef2lla = ECEF2LLA()
+    ecef2lla.execute(ecef)
+
+    print(ecef2lla)
+
+    lla = ecef2lla.output
