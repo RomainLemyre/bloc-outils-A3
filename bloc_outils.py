@@ -7,6 +7,7 @@ from Euler2Quaternion import Euler2Quaternion
 from Inert2Miss import Inert2Miss
 from NED2LLA import NED2LLA
 from norme import norme
+from pqr2Quaternion import pqr2Quaternion
 from Quaternion2DCM import Quaternion2DCM
 from Quaternion2Euler import Quaternion2Euler
 from vectoriel import vectoriel
@@ -69,3 +70,13 @@ if __name__ == '__main__':
     ecef2lla.execute(ecef)
     lla = ecef2lla.output
     print("to LLA : {}".format(lla))
+
+    print("\n===\n")
+
+    pqr = np.array([10, 20, 30])
+    print("pqr : {}".format(pqr))
+    pqr2quaternion = pqr2Quaternion(time_step=0.1)
+    temps = 100
+    for i in range(temps + 1):
+        pqr2quaternion.execute(pqr)
+    print("After {} seconds\npqr2quaternion : {}".format(pqr2quaternion.time, pqr2quaternion.output))
